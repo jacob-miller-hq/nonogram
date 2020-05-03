@@ -1,26 +1,33 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect, useRef } from 'react'
+import './App.scss';
+import Palette from './components/Palette'
 
 function App() {
+  const input = useRef(null)
+  const [imgSrc, setImgSrc] = useState("")
+
+  const handleUpload = e => {
+    console.log(e.target.files)
+    const url = URL.createObjectURL(e.target.files[0])
+    setImgSrc(url)
+  }
+
+  useEffect(() => {
+    console.log('effect')
+    console.log(input)
+  }, [input.onload])
+
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        <h1 className="App-title">Nonogram Generator/Solver</h1>
       </header>
+      <input onChange={handleUpload} type="file" id="img" name="img" accept="image/*" />
+      <img src={imgSrc} visibility="hidden" alt="Uploaded file" />
+
+      <Palette paletteSize="2" />
     </div>
-  );
+  )
 }
 
 export default App;
