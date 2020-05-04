@@ -38,7 +38,7 @@ function Palette(props) {
 
   return (
     <input type="number" name={props.name} value={inputVal} min={props.min} max={props.max}
-        onInput={handleInputValChange} onBlur={updateVal} onKeyDown={handleInputKeyDown} />
+        onChange={handleInputValChange} onBlur={updateVal} onKeyDown={handleInputKeyDown} />
   )
 }
 

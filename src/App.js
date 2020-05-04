@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import './App.scss';
 import Palette from './components/Palette'
+import Nonogram from './components/Nonogram';
 
 function App() {
   const input = useRef(null)
@@ -26,6 +27,7 @@ function App() {
       <img src={imgSrc} visibility="hidden" alt="Uploaded file" />
 
       <Palette paletteSize="2" />
+      <Nonogram />
     </div>
   )
 }
