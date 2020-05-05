@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react'
 
 function Nonogram(props) {
+  const {puzzleData} = props
+
   const canvasRef = useRef(null)
 
-  const [gridSize, setGridSize] = useState(10)
   const [grid, setGrid] = useState([])
 
   useEffect(() => {
-    setGrid(Array(gridSize * gridSize).fill(0))
-  }, [gridSize])
+    setGrid(Array(puzzleData.rows * puzzleData.cols).fill(0))
+  }, [puzzleData.rows, puzzleData.cols])
 
   useEffect(() => {
     const cvs = canvasRef.current
@@ -20,13 +21,13 @@ function Nonogram(props) {
     ctx.fillStyle = '#dddddd'
     ctx.fillRect(0, 0, w, h)
 
-    let colW = (w-1) / gridSize
-    let rowH = (h-1) / gridSize
+    let colW = (w-1) / puzzleData.cols
+    let rowH = (h-1) / puzzleData.rows
     // fill grid
     grid.forEach((cell, i) => {
       if (cell !== 0) {
-        let r = Math.floor(i / gridSize)
-        let c = i % gridSize
+        let r = Math.floor(i / puzzleData.cols)
+        let c = i % puzzleData.cols
         let x = c * colW
         let y = r * rowH
 
@@ -41,18 +42,20 @@ function Nonogram(props) {
     ctx.moveTo(0, h-1)
     ctx.lineTo(w-1, h-1)
     ctx.lineTo(w-1, 0)
-    for(let i = 0; i < gridSize; i++) {
+    for(let i = 0; i < puzzleData.rows; i++) {
       let y = i * rowH
-      let x = i * colW
       ctx.moveTo(0, y)
       ctx.lineTo(w-1, y)
+    }
+    for(let i = 0; i < puzzleData.cols; i++) {
+      let x = i * colW
       ctx.moveTo(x, 0)
       ctx.lineTo(x, h-1)
     }
     ctx.stroke()
 
     
-  }, [grid, gridSize])
+  }, [grid, puzzleData])
 
   const handleClick = e => {
     const pos = getCursorPos(canvasRef.current, e)
@@ -67,9 +70,9 @@ function Nonogram(props) {
   const posToGridIdx = (pos) => {
     const w = canvasRef.current.width
     const h = canvasRef.current.height
-    const r = Math.floor(pos.y / h * gridSize)
-    const c = Math.floor(pos.x / w * gridSize)
-    return r * gridSize + c
+    const r = Math.floor(pos.y / h * puzzleData.rows)
+    const c = Math.floor(pos.x / w * puzzleData.cols)
+    return r * puzzleData.cols + c
   }
 
   return (

@@ -18,6 +18,11 @@ function App() {
     console.log(input)
   }, [input.onload])
 
+  const puzzleData = {
+    rows: 10,
+    cols: 12,
+  }
+
   return (
     <div className="App">
       <header className="App-header">
@@ -27,7 +32,7 @@ function App() {
       <img src={imgSrc} visibility="hidden" alt="Uploaded file" />
 
       <Palette paletteSize="2" />
-      <Nonogram />
+      <Nonogram puzzleData={puzzleData}/>
     </div>
   )
 }
