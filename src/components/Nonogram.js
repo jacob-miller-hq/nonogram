@@ -46,7 +46,7 @@ function Nonogram(props) {
 
     // fill grid
     grid.forEach((cell, i) => {
-      if (cell !== 0) {
+      if (cell) {
         let r = Math.floor(i / cols)
         let c = i % cols
         let x = c * cellSize
@@ -80,6 +80,7 @@ function Nonogram(props) {
   const handleClick = e => {
     const pos = getCursorPos(canvasRef.current, e)
     const i = posToGridIdx(pos, gridRect)
+    console.log(grid[i])
     setGrid([
       ...grid.slice(0, i),
       !grid[i],
