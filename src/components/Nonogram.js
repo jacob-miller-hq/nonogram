@@ -7,6 +7,11 @@ function getCursorPos(cvs, e) {
   return {x, y}
 }
 
+function rectContains(rect, pos) {
+  return rect.left < pos.x && pos.x < rect.right
+      && rect.top < pos.y && pos.y < rect.bottom
+}
+
 function Nonogram(props) {
   const {puzzleData} = props
   const {rows, cols} = puzzleData ? puzzleData : {rows: 10, cols: 10}
@@ -15,6 +20,8 @@ function Nonogram(props) {
 
   const [grid, setGrid] = useState([])
   const [gridRect, setGridRect] = useState({left:0, top:0, right:0, bottom:0})
+  const [pressed, setPressed] = useState(false)
+  const [erasing, setErasing] = useState(false)
 
   useEffect(() => {
     setGrid(Array(rows * cols).fill(0))
@@ -77,15 +84,38 @@ function Nonogram(props) {
     
   }, [grid, rows, cols])
 
-  const handleClick = e => {
-    const pos = getCursorPos(canvasRef.current, e)
+  const setGridPos = (pos, val) => {
     const i = posToGridIdx(pos, gridRect)
-    console.log(grid[i])
     setGrid([
       ...grid.slice(0, i),
-      !grid[i],
+      val,
       ...grid.slice(i+1)
     ])
+  }
+
+  const handleMouseDown = e => {
+    setPressed(true)
+    const pos = getCursorPos(canvasRef.current, e)
+    const i = posToGridIdx(pos, gridRect)
+    const prev = grid[i]
+    if (prev === 0) {
+      setErasing(true)
+      setGridPos(pos, 0)
+    } else {
+      setErasing(false)
+      setGridPos(pos, 1)
+    }
+  }
+
+  const handleMouseUp = e => {
+    setPressed(false)
+  }
+
+  const handleMouseMove = e => {
+    const pos = getCursorPos(canvasRef.current, e)
+    if (rectContains(gridRect, pos) && pressed) {
+      setGridPos(pos, erasing ? 1 : 0)
+    }
   }
 
   const posToGridIdx = (pos, gridRect) => {
@@ -96,7 +126,7 @@ function Nonogram(props) {
   }
 
   return (
-    <canvas ref={canvasRef} onClick={handleClick}/>
+    <canvas ref={canvasRef} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove} />
   )
 }
 
