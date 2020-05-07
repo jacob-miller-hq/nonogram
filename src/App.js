@@ -32,7 +32,6 @@ function App() {
       <input onChange={handleUpload} type="file" id="img" name="img" accept="image/*" />
       <img src={imgSrc} visibility="hidden" alt="Uploaded file" />
 
-      <Palette paletteSize="2" />
       <Nonogram puzzleData={puzzleData}/>
     </div>
   )

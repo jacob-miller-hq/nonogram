@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import Palette from './Palette'
 
 function getCursorPos(cvs, e) {
   const rect = cvs.getBoundingClientRect()
@@ -26,6 +27,7 @@ function Nonogram(props) {
 
   const canvasRef = useRef(null)
 
+  const [showEditPalette, setShowEditPalette] = useState(false)
   const [grid, setGrid] = useState([])
   const [gridRect, setGridRect] = useState({left:0, top:0, right:0, bottom:0})
   const [pressed, setPressed] = useState(false)
@@ -188,8 +190,20 @@ function Nonogram(props) {
     return r * cols + c
   }
 
+  const handleOpenPalette = () => {
+    setShowEditPalette(true)
+  }
+
+  const handleClosePalette = () => {
+    setShowEditPalette(false)
+  }
+
   return (
-    <canvas ref={canvasRef} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove} />
+    <div className='nonogram'>
+      <button onClick={handleOpenPalette}>Edit Palette</button>
+      <canvas ref={canvasRef} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove} />
+      <Palette paletteSize="2" onClose={handleClosePalette} hidden={!showEditPalette} />
+    </div>
   )
 }
 

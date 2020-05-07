@@ -43,12 +43,22 @@ function Palette(props) {
     )
   })
 
-  return (
-    <div>
-      <NumberInput type="number" name="paletteSize" value={paletteSize} min={2} max={16}
-          onChange={handlePaletteSizeChange} />
+  const handleCloseClick = e => {
+    props.onClose()
+  }
 
-      {pickers}
+  return (
+    props.hidden ? null :
+    <div className="modal">
+      <div className="modal-window">
+        <button className="modal-close" onClick={handleCloseClick}>x</button>
+        <h2>Edit Palette</h2>
+        <NumberInput type="number" name="paletteSize" value={paletteSize} min={2} max={16}
+            onChange={handlePaletteSizeChange} />
+        <div className="picker-container">
+          {pickers}
+        </div>
+      </div>
     </div>
   )
 }
