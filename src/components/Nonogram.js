@@ -7,21 +7,31 @@ function getCursorPos(cvs, e) {
   return {x, y}
 }
 
-function rectContains(rect, pos) {
-  return rect.left < pos.x && pos.x < rect.right
-      && rect.top < pos.y && pos.y < rect.bottom
+function contains({x, y}, {left, top, right, bottom}) {
+  return left < x && x < right
+      && top < y && y < bottom
+}
+
+function bound({x, y}, {left, top, right, bottom}) {
+  return {
+    x: Math.max(left, Math.min(x, right-1)),
+    y: Math.max(top, Math.min(y, bottom-1))
+  }
 }
 
 function Nonogram(props) {
   const {puzzleData} = props
-  const {rows, cols} = puzzleData ? puzzleData : {rows: 10, cols: 10}
+  const {rows, cols, backgroundColor} = 
+      puzzleData ? puzzleData : {rows: 10, cols: 10, backgroundColor: '#000000'}
 
   const canvasRef = useRef(null)
 
   const [grid, setGrid] = useState([])
   const [gridRect, setGridRect] = useState({left:0, top:0, right:0, bottom:0})
   const [pressed, setPressed] = useState(false)
-  const [erasing, setErasing] = useState(false)
+  const [dragStart, setDragStart] = useState(null)
+  const [dragIndexes, setDragIndexes] = useState([])
+  const [drawVal, setDrawVal] = useState(null)
 
   useEffect(() => {
     setGrid(Array(rows * cols).fill(0))
@@ -48,7 +58,7 @@ function Nonogram(props) {
     })
 
     // clear canvas
-    ctx.fillStyle = '#dddddd'
+    ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, w, h)
 
     // fill grid
@@ -64,8 +74,22 @@ function Nonogram(props) {
       }
     })
 
+    // draw to-be-filled cells
+    if (pressed) {
+      const indexes = dragIndexes
+      indexes.forEach(i => {
+        let r = Math.floor(i / cols)
+        let c = i % cols
+        let x = c * cellSize
+        let y = r * cellSize
+
+        ctx.fillStyle = drawVal === 1 ? '#11dd11' : backgroundColor
+        ctx.fillRect(gridLeft + x + 2, gridTop + y + 2, cellSize - 4, cellSize - 4)
+      })
+    }
+
     // outline grid
-    ctx.strokeStyle = '#000000'
+    ctx.strokeStyle = '#111111'
     ctx.beginPath()
     ctx.moveTo(gridLeft, gridBottom)
     ctx.lineTo(gridRight, gridBottom)
@@ -82,40 +106,79 @@ function Nonogram(props) {
     }
     ctx.stroke()
     
-  }, [grid, rows, cols])
-
-  const setGridPos = (pos, val) => {
-    const i = posToGridIdx(pos, gridRect)
-    setGrid([
-      ...grid.slice(0, i),
-      val,
-      ...grid.slice(i+1)
-    ])
-  }
+  }, [grid, rows, cols, backgroundColor, dragStart, dragIndexes, drawVal, pressed])
 
   const handleMouseDown = e => {
-    setPressed(true)
-    const pos = getCursorPos(canvasRef.current, e)
-    const i = posToGridIdx(pos, gridRect)
-    const prev = grid[i]
-    if (prev === 0) {
-      setErasing(true)
-      setGridPos(pos, 0)
-    } else {
-      setErasing(false)
-      setGridPos(pos, 1)
+    if (pressed) {
+      // whoops, must have missed a mouseUp, don't set new dragStart or drawVal
+      return
     }
-  }
-
-  const handleMouseUp = e => {
-    setPressed(false)
+    const pos = getCursorPos(canvasRef.current, e)
+    if (contains(pos, gridRect)) {
+      setPressed(true)
+      setDragStart(pos)
+      const idx = posToGridIdx(pos, gridRect)
+      if (grid[idx] === 1) {
+        setDrawVal(0)
+      } else {
+        setDrawVal(1)
+      }
+      setDragIndexes(getIndexesBetween(pos, pos))
+    }
   }
 
   const handleMouseMove = e => {
     const pos = getCursorPos(canvasRef.current, e)
-    if (rectContains(gridRect, pos) && pressed) {
-      setGridPos(pos, erasing ? 1 : 0)
+    if (pressed) {
+      if (!e.buttons) {
+        // somehow button release was not recognized
+        setPressed(false)
+        return
+      }
+      // only allow lines along an axis
+      const isHorizontal = Math.abs(pos.x - dragStart.x) > Math.abs(pos.y - dragStart.y)
+      const dragEnd = isHorizontal ?
+          {x: pos.x, y: dragStart.y} :
+          {x: dragStart.x, y: pos.y}
+      
+      const boundedEnd = bound(dragEnd, gridRect)
+      
+      setDragIndexes(getIndexesBetween(dragStart, boundedEnd))
     }
+  }
+
+  const handleMouseUp = e => {
+    const pos = getCursorPos(canvasRef.current, e)
+    if (pressed && contains(pos, gridRect)) {
+      setPressed(false)
+      setGridIndexes(dragIndexes, drawVal)
+    }
+  }
+
+  const getIndexesBetween = (pos1, pos2) => {
+    // could calculate how many cells are actually covered, but for now it's faster/easier
+    // to just make sure we can cover the max situation and work backwards
+    const maxCellsToFill = Math.max(rows, cols)
+    const indexes = []
+    for (let i = 0; i < maxCellsToFill; i++) {
+      const alpha = i / (maxCellsToFill - 1)
+      const pos = {
+        x: pos2.x * alpha + pos1.x * (1 - alpha),
+        y: pos2.y * alpha + pos1.y * (1 - alpha),
+      }
+      const idx = posToGridIdx(pos, gridRect)
+      indexes.push(idx)
+    }
+    // return only unique indexes
+    return indexes.filter((val, i, arr) => arr.indexOf(val) === i)
+  }
+
+  const setGridIndexes = (indexes, val) => {
+    const newGrid = grid.slice(0)
+    indexes.forEach(idx => {
+      newGrid[idx] = val
+    })
+    setGrid(newGrid)
   }
 
   const posToGridIdx = (pos, gridRect) => {
