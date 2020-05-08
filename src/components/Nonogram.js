@@ -27,6 +27,7 @@ function Nonogram(props) {
 
   const canvasRef = useRef(null)
 
+  const [palette, setPalette] = useState(['#00003f'])
   const [showEditPalette, setShowEditPalette] = useState(false)
   const [grid, setGrid] = useState([])
   const [gridRect, setGridRect] = useState({left:0, top:0, right:0, bottom:0})
@@ -71,7 +72,7 @@ function Nonogram(props) {
         let x = c * cellSize
         let y = r * cellSize
 
-        ctx.fillStyle = "#11dd11"
+        ctx.fillStyle = palette[0]
         ctx.fillRect(gridLeft + x, gridTop + y, cellSize, cellSize)
       }
     })
@@ -85,7 +86,7 @@ function Nonogram(props) {
         let x = c * cellSize
         let y = r * cellSize
 
-        ctx.fillStyle = drawVal === 1 ? '#11dd11' : backgroundColor
+        ctx.fillStyle = drawVal === 1 ? palette[0] : backgroundColor
         ctx.fillRect(gridLeft + x + 2, gridTop + y + 2, cellSize - 4, cellSize - 4)
       })
     }
@@ -108,7 +109,7 @@ function Nonogram(props) {
     }
     ctx.stroke()
     
-  }, [grid, rows, cols, backgroundColor, dragStart, dragIndexes, drawVal, pressed])
+  }, [grid, rows, cols, backgroundColor, dragStart, dragIndexes, drawVal, pressed, palette])
 
   const handleMouseDown = e => {
     if (pressed) {
@@ -198,11 +199,15 @@ function Nonogram(props) {
     setShowEditPalette(false)
   }
 
+  const handleUpdatePalette = (newPalette) => {
+    setPalette(newPalette)
+  }
+
   return (
     <div className='nonogram'>
       <button onClick={handleOpenPalette}>Edit Palette</button>
       <canvas ref={canvasRef} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove} />
-      <Palette paletteSize="2" onClose={handleClosePalette} hidden={!showEditPalette} />
+      <Palette palette={palette} updatePalette={handleUpdatePalette} onClose={handleClosePalette} hidden={!showEditPalette} />
     </div>
   )
 }

@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import './App.scss';
-import Palette from './components/Palette'
 import Nonogram from './components/Nonogram';
 
 function App() {
@@ -12,11 +11,6 @@ function App() {
     const url = URL.createObjectURL(e.target.files[0])
     setImgSrc(url)
   }
-
-  useEffect(() => {
-    console.log('effect')
-    console.log(input)
-  }, [input.onload])
 
   const puzzleData = {
     rows: 10,

@@ -3,7 +3,6 @@ import NumberInput from './NumberInput'
 import ColorPicker from './ColorPicker'
 
 const DEFAULT_PALETTE = [
-  '#ffffff',
   '#00003f',
   '#ff0000',
   '#00ff7f',
@@ -11,32 +10,27 @@ const DEFAULT_PALETTE = [
   '#3f00ff',
   '#804d20',
   '#ff7fff',
-  '#000000',
-  '#000000',
-  '#000000',
-  '#000000',
-  '#000000',
-  '#000000',
-  '#000000',
-  '#000000',
+  '#7f7f7f'
 ]
 
 function Palette(props) {
-  const [paletteSize, setPaletteSize] = useState(2)
-  const [palette, setPalette] = useState(DEFAULT_PALETTE)
+  const {palette=DEFAULT_PALETTE.slice(0, 1), updatePalette} = props
+  const [_palette, set_palette] = useState(DEFAULT_PALETTE)
 
   // need three functions here because react onChange and number inputs are broken
   const handlePaletteSizeChange = e => {
-    setPaletteSize(e.target.value)
+    updatePalette(_palette.slice(0, e.target.value))
   }
 
-  const pickers = palette.slice(0, paletteSize).map((color, i) => {
+  const pickers = palette.map((color, i) => {
     const handleColorIChange = e => {
-      setPalette([
-        ...palette.slice(0, i),
+      const newPalette = [
+        ..._palette.slice(0, i),
         e.target.value,
-        ...palette.slice(i+1)
-      ])
+        ..._palette.slice(i+1)
+      ]
+      set_palette(newPalette)
+      updatePalette(newPalette.slice(0, palette.length))
     }
     return (
       <ColorPicker key={i} color={color} onChange={handleColorIChange}/>
@@ -53,7 +47,7 @@ function Palette(props) {
       <div className="modal-window">
         <button className="modal-close" onClick={handleCloseClick}>x</button>
         <h2>Edit Palette</h2>
-        <NumberInput type="number" name="paletteSize" value={paletteSize} min={2} max={16}
+        <NumberInput type="number" name="paletteSize" value={palette.length} min={1} max={8}
             onChange={handlePaletteSizeChange} />
         <div className="picker-container">
           {pickers}
@@ -61,6 +55,10 @@ function Palette(props) {
       </div>
     </div>
   )
+}
+
+Palette.defualtProps = {
+  palette: DEFAULT_PALETTE.slice(0, 2)
 }
 
 export default Palette
