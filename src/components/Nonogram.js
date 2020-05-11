@@ -64,6 +64,12 @@ function Nonogram(props) {
   }, [rows, cols])
 
   useEffect(() => {
+    if (selectedVal >= palette.length) {
+      setSelectedVal(palette.length - 1)
+    }
+  }, [palette, selectedVal])
+
+  useEffect(() => {
     // TODO: this probably needs some work
     const margin = Math.min(canvasDims.width, canvasDims.height) * 0.05
     const cellSize = Math.min((canvasDims.width - 1 - 2*margin) / cols, (canvasDims.height - 1 - 2*margin) / rows)
