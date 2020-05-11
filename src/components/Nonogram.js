@@ -146,15 +146,19 @@ function Nonogram(props) {
     if (contains(pos, gridRect)) {
       setPressed(true)
       setDragStart(pos)
+      const idx = posToGridIdx(pos, gridRect)
       if (e.button === 0) {
-        const idx = posToGridIdx(pos, gridRect)
         if (grid[idx] === 1) {
           setDrawVal(0)
         } else {
           setDrawVal(1)
         }
       } else if (e.button === 2) {
-        setDrawVal(-1)
+        if (grid[idx] === -1) {
+          setDrawVal(0)
+        } else {
+          setDrawVal(-1)
+        }
       } else {
         return // ignore middle button
       }
