@@ -27,11 +27,13 @@ function Nonogram(props) {
 
   const canvasRef = useRef(null)
 
-  const [canvasRect, setCanvasRect] = useState({width: 0, height: 0})
-  const [palette, setPalette] = useState(['#00003f'])
+  const [canvasDims, setCanvasDims] = useState({width: 0, height: 0})
+  const [palette, setPalette] = useState(['#00003f', '#ff0000', '#00ff7f'])
+  const [selectedVal, setSelectedVal] = useState(0)
   const [showEditPalette, setShowEditPalette] = useState(false)
   const [grid, setGrid] = useState([])
-  const [gridRect, setGridRect] = useState({left:0, top:0, right:0, bottom:0})
+  const [gridDims, setGridDims] = useState({left:0, top:0, right:0, bottom:0, cellSize:0})
+  const [paletteDims, setPaletteDims] = useState({left:0, top:0, right:0, bottom:0})
   const [pressed, setPressed] = useState(false)
   const [dragStart, setDragStart] = useState(null)
   const [dragIndexes, setDragIndexes] = useState([])
@@ -40,7 +42,7 @@ function Nonogram(props) {
   useEffect(() => {
     console.log('resize effect')
     const handleResize = () => {
-      setCanvasRect(canvasRef.current.getBoundingClientRect())
+      setCanvasDims(canvasRef.current.getBoundingClientRect())
     }
 
     handleResize()
@@ -53,36 +55,71 @@ function Nonogram(props) {
   // do this outside the resize handler to prevent flickering
   useEffect(() => {
     const cvs = canvasRef.current
-    cvs.width = canvasRect.width
-    cvs.height = canvasRect.height
-  }, [canvasRect])
+    cvs.width = canvasDims.width
+    cvs.height = canvasDims.height
+  }, [canvasDims])
 
   useEffect(() => {
     setGrid(Array(rows * cols).fill(0))
   }, [rows, cols])
 
   useEffect(() => {
-    const cvs = canvasRef.current
-    const ctx = cvs.getContext('2d')
-    const {width, height} = canvasRect
-
     // TODO: this probably needs some work
-    const margin = 5
-    const cellSize = Math.min((width - 1 - 2*margin) / cols, (height - 1 - 2*margin) / rows)
-    const gridRight = (width - 1) - margin
-    const gridBottom = (height - 1) - margin
+    const margin = Math.min(canvasDims.width, canvasDims.height) * 0.05
+    const cellSize = Math.min((canvasDims.width - 1 - 2*margin) / cols, (canvasDims.height - 1 - 2*margin) / rows)
+
+    const paletteLeft = margin
+    const paletteTop = margin
+    const paletteRight = paletteLeft + cellSize
+    const paletteBottom = paletteTop + palette.length * cellSize
+    setPaletteDims({
+      left: paletteLeft,
+      top: paletteTop,
+      right: paletteRight,
+      bottom: paletteBottom,
+      cellSize: cellSize
+    })
+
+    const gridRight = (canvasDims.width - 1) - margin
+    const gridBottom = (canvasDims.height - 1) - margin
     const gridLeft = gridRight - (cellSize * cols)
     const gridTop = gridBottom - (cellSize * rows)
-    setGridRect({
+    setGridDims({
       left: gridLeft,
       top: gridTop,
       right: gridRight,
-      bottom: gridBottom
+      bottom: gridBottom,
+      cellSize
     })
+  }, [canvasDims, cols, rows, palette])
+
+  useEffect(() => {
+    const cvs = canvasRef.current
+    const ctx = cvs.getContext('2d')
+    const {width, height} = canvasDims
+    const {left, top, right, bottom, cellSize} = gridDims
 
     // clear canvas
     ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, width, height)
+
+    // draw palette
+    const cellTop = i => paletteDims.top + i * paletteDims.cellSize
+    palette.forEach((color, i) => {
+      ctx.fillStyle = color
+      ctx.fillRect(paletteDims.left, cellTop(i), paletteDims.cellSize, paletteDims.cellSize)
+    })
+
+    ctx.strokeStyle = '#000000'
+    ctx.lineWidth = 4
+    ctx.beginPath()
+    ctx.rect(paletteDims.left, cellTop(selectedVal), paletteDims.cellSize, paletteDims.cellSize)
+    ctx.stroke()
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.rect(paletteDims.left, cellTop(selectedVal), paletteDims.cellSize, paletteDims.cellSize)
+    ctx.stroke()
 
     const fillCell = (i, val, isPending) => {
       const r = Math.floor(i / cols)
@@ -92,14 +129,15 @@ function Nonogram(props) {
       const margin = isPending ? cellSize * 0.2 : 0
   
       ctx.fillStyle = val > 0 ? palette[val-1] : backgroundColor
-      ctx.fillRect(gridLeft + x + margin, gridTop + y + margin, cellSize - 2*margin, cellSize - 2*margin)
+      ctx.fillRect(left + x + margin, top + y + margin, cellSize - 2*margin, cellSize - 2*margin)
       if (val === -1) {
-        const cellLeft = gridLeft + x + margin
-        const cellTop = gridTop + y + margin
-        const cellRight = gridLeft + x + cellSize - margin
-        const cellBottom = gridTop + y + cellSize - margin
+        const cellLeft = left + x + margin
+        const cellTop = top + y + margin
+        const cellRight = left + x + cellSize - margin
+        const cellBottom = top + y + cellSize - margin
   
         ctx.strokeStyle = '#000000'
+        ctx.lineWidth = 1
         ctx.beginPath()
         ctx.moveTo(cellLeft, cellTop)
         ctx.lineTo(cellRight, cellBottom)
@@ -119,23 +157,32 @@ function Nonogram(props) {
 
     // outline grid
     ctx.strokeStyle = '#111111'
+    ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.moveTo(gridLeft, gridBottom)
-    ctx.lineTo(gridRight, gridBottom)
-    ctx.lineTo(gridRight, gridTop)
+    ctx.moveTo(left, bottom)
+    ctx.lineTo(right, bottom)
+    ctx.lineTo(right, top)
     for(let i = 0; i < cols; i++) {
-      let x = gridLeft + i * cellSize
-      ctx.moveTo(x, gridTop)
-      ctx.lineTo(x, gridBottom)
+      let x = left + i * cellSize
+      ctx.moveTo(x, top)
+      ctx.lineTo(x, bottom)
     }
     for(let i = 0; i < rows; i++) {
-      let y = gridTop + i * cellSize
-      ctx.moveTo(gridLeft, y)
-      ctx.lineTo(gridRight, y)
+      let y = top + i * cellSize
+      ctx.moveTo(left, y)
+      ctx.lineTo(right, y)
     }
     ctx.stroke()
-    
-  }, [grid, rows, cols, backgroundColor, dragStart, dragIndexes, drawVal, pressed, palette, canvasRect])
+    // TODO: split this up so it doesn't have so many dependencies
+  }, [grid, rows, cols, backgroundColor, dragStart, dragIndexes, drawVal, pressed, palette, gridDims, paletteDims, canvasDims, selectedVal])
+
+  const handleClick = e => {
+    const pos = getCursorPos(canvasRef.current, e)
+    if(contains(pos, paletteDims)) {
+      const newVal = Math.floor((pos.y - paletteDims.top) / paletteDims.cellSize)
+      setSelectedVal(newVal) 
+    }
+  }
 
   const handleMouseDown = e => {
     if (pressed) {
@@ -143,10 +190,10 @@ function Nonogram(props) {
       return
     }
     const pos = getCursorPos(canvasRef.current, e)
-    if (contains(pos, gridRect)) {
+    if (contains(pos, gridDims)) {
       setPressed(true)
       setDragStart(pos)
-      const idx = posToGridIdx(pos, gridRect)
+      const idx = posToGridIdx(pos, gridDims)
       if (e.button === 0) {
         if (grid[idx] === 1) {
           setDrawVal(0)
@@ -181,7 +228,7 @@ function Nonogram(props) {
           {x: pos.x, y: dragStart.y} :
           {x: dragStart.x, y: pos.y}
       
-      const boundedEnd = bound(dragEnd, gridRect)
+      const boundedEnd = bound(dragEnd, gridDims)
       
       setDragIndexes(getIndexesBetween(dragStart, boundedEnd))
     }
@@ -189,7 +236,7 @@ function Nonogram(props) {
 
   const handleMouseUp = e => {
     const pos = getCursorPos(canvasRef.current, e)
-    if (pressed && contains(pos, gridRect)) {
+    if (pressed && contains(pos, gridDims)) {
       setPressed(false)
       setGridIndexes(dragIndexes, drawVal)
     }
@@ -210,7 +257,7 @@ function Nonogram(props) {
         x: pos2.x * alpha + pos1.x * (1 - alpha),
         y: pos2.y * alpha + pos1.y * (1 - alpha),
       }
-      const idx = posToGridIdx(pos, gridRect)
+      const idx = posToGridIdx(pos, gridDims)
       indexes.push(idx)
     }
     // return only unique indexes
@@ -247,7 +294,7 @@ function Nonogram(props) {
   return (
     <div className='nonogram'>
       <button onClick={handleOpenPalette}>Edit Palette</button>
-      <canvas ref={canvasRef}
+      <canvas ref={canvasRef} onClick={handleClick}
           onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}
           onMouseMove={handleMouseMove} onContextMenu={handleContextMenu} />
 
