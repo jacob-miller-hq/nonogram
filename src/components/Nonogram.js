@@ -195,10 +195,10 @@ function Nonogram(props) {
       setDragStart(pos)
       const idx = posToGridIdx(pos, gridDims)
       if (e.button === 0) {
-        if (grid[idx] === 1) {
+        if (grid[idx] === selectedVal+1) {
           setDrawVal(0)
         } else {
-          setDrawVal(1)
+          setDrawVal(selectedVal+1)
         }
       } else if (e.button === 2) {
         if (grid[idx] === -1) {
