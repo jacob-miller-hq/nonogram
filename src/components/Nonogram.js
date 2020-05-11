@@ -64,31 +64,37 @@ function Nonogram(props) {
     ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, w, h)
 
-    // fill grid
-    grid.forEach((cell, i) => {
-      if (cell) {
-        let r = Math.floor(i / cols)
-        let c = i % cols
-        let x = c * cellSize
-        let y = r * cellSize
-
-        ctx.fillStyle = palette[0]
-        ctx.fillRect(gridLeft + x, gridTop + y, cellSize, cellSize)
+    const fillCell = (i, val, isPending) => {
+      const r = Math.floor(i / cols)
+      const c = i % cols
+      const x = c * cellSize
+      const y = r * cellSize
+      const margin = isPending ? 2 : 0
+  
+      ctx.fillStyle = val > 0 ? palette[val-1] : backgroundColor
+      ctx.fillRect(gridLeft + x + margin, gridTop + y + margin, cellSize - 2*margin, cellSize - 2*margin)
+      if (val === -1) {
+        const cellLeft = gridLeft + x + margin
+        const cellTop = gridTop + y + margin
+        const cellRight = gridLeft + x + cellSize - margin
+        const cellBottom = gridTop + y + cellSize - margin
+  
+        ctx.strokeStyle = '#000000'
+        ctx.beginPath()
+        ctx.moveTo(cellLeft, cellTop)
+        ctx.lineTo(cellRight, cellBottom)
+        ctx.moveTo(cellRight, cellTop)
+        ctx.lineTo(cellLeft, cellBottom)
+        ctx.stroke()
       }
-    })
+    }
+
+    // fill grid
+    grid.forEach((cell, i) => fillCell(i, cell, false))
 
     // draw to-be-filled cells
     if (pressed) {
-      const indexes = dragIndexes
-      indexes.forEach(i => {
-        let r = Math.floor(i / cols)
-        let c = i % cols
-        let x = c * cellSize
-        let y = r * cellSize
-
-        ctx.fillStyle = drawVal === 1 ? palette[0] : backgroundColor
-        ctx.fillRect(gridLeft + x + 2, gridTop + y + 2, cellSize - 4, cellSize - 4)
-      })
+      dragIndexes.forEach(i => fillCell(i, drawVal, true))
     }
 
     // outline grid
@@ -120,12 +126,19 @@ function Nonogram(props) {
     if (contains(pos, gridRect)) {
       setPressed(true)
       setDragStart(pos)
-      const idx = posToGridIdx(pos, gridRect)
-      if (grid[idx] === 1) {
-        setDrawVal(0)
+      if (e.button === 0) {
+        const idx = posToGridIdx(pos, gridRect)
+        if (grid[idx] === 1) {
+          setDrawVal(0)
+        } else {
+          setDrawVal(1)
+        }
+      } else if (e.button === 2) {
+        setDrawVal(-1)
       } else {
-        setDrawVal(1)
+        return // ignore middle button
       }
+      // add just this cell to the ones pending change without waiting for drag
       setDragIndexes(getIndexesBetween(pos, pos))
     }
   }
@@ -156,6 +169,10 @@ function Nonogram(props) {
       setPressed(false)
       setGridIndexes(dragIndexes, drawVal)
     }
+  }
+
+  const handleContextMenu = e => {
+    e.preventDefault()
   }
 
   const getIndexesBetween = (pos1, pos2) => {
@@ -206,7 +223,10 @@ function Nonogram(props) {
   return (
     <div className='nonogram'>
       <button onClick={handleOpenPalette}>Edit Palette</button>
-      <canvas ref={canvasRef} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove} />
+      <canvas ref={canvasRef}
+          onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove} onContextMenu={handleContextMenu} />
+
       <Palette palette={palette} updatePalette={handleUpdatePalette} onClose={handleClosePalette} hidden={!showEditPalette} />
     </div>
   )
