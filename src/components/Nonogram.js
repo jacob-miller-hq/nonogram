@@ -27,6 +27,7 @@ function Nonogram(props) {
 
   const canvasRef = useRef(null)
 
+  const [canvasRect, setCanvasRect] = useState({width: 0, height: 0})
   const [palette, setPalette] = useState(['#00003f'])
   const [showEditPalette, setShowEditPalette] = useState(false)
   const [grid, setGrid] = useState([])
@@ -37,20 +38,39 @@ function Nonogram(props) {
   const [drawVal, setDrawVal] = useState(null)
 
   useEffect(() => {
+    console.log('resize effect')
+    const handleResize = () => {
+      setCanvasRect(canvasRef.current.getBoundingClientRect())
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return _ => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, []) // empty dependency array means it only runs on load
+
+  // do this outside the resize handler to prevent flickering
+  useEffect(() => {
+    const cvs = canvasRef.current
+    cvs.width = canvasRect.width
+    cvs.height = canvasRect.height
+  }, [canvasRect])
+
+  useEffect(() => {
     setGrid(Array(rows * cols).fill(0))
   }, [rows, cols])
 
   useEffect(() => {
     const cvs = canvasRef.current
     const ctx = cvs.getContext('2d')
-    const w = cvs.width
-    const h = cvs.height
+    const {width, height} = canvasRect
 
     // TODO: this probably needs some work
     const margin = 5
-    const cellSize = Math.min((w - 1 - 2*margin) / cols, (h - 1 - 2*margin) / rows)
-    const gridRight = (w - 1) - margin
-    const gridBottom = (h - 1) - margin
+    const cellSize = Math.min((width - 1 - 2*margin) / cols, (height - 1 - 2*margin) / rows)
+    const gridRight = (width - 1) - margin
+    const gridBottom = (height - 1) - margin
     const gridLeft = gridRight - (cellSize * cols)
     const gridTop = gridBottom - (cellSize * rows)
     setGridRect({
@@ -62,14 +82,14 @@ function Nonogram(props) {
 
     // clear canvas
     ctx.fillStyle = backgroundColor
-    ctx.fillRect(0, 0, w, h)
+    ctx.fillRect(0, 0, width, height)
 
     const fillCell = (i, val, isPending) => {
       const r = Math.floor(i / cols)
       const c = i % cols
       const x = c * cellSize
       const y = r * cellSize
-      const margin = isPending ? 2 : 0
+      const margin = isPending ? cellSize * 0.2 : 0
   
       ctx.fillStyle = val > 0 ? palette[val-1] : backgroundColor
       ctx.fillRect(gridLeft + x + margin, gridTop + y + margin, cellSize - 2*margin, cellSize - 2*margin)
@@ -115,7 +135,7 @@ function Nonogram(props) {
     }
     ctx.stroke()
     
-  }, [grid, rows, cols, backgroundColor, dragStart, dragIndexes, drawVal, pressed, palette])
+  }, [grid, rows, cols, backgroundColor, dragStart, dragIndexes, drawVal, pressed, palette, canvasRect])
 
   const handleMouseDown = e => {
     if (pressed) {
