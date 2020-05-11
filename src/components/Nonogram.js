@@ -67,6 +67,17 @@ function Nonogram(props) {
     if (selectedVal >= palette.length) {
       setSelectedVal(palette.length - 1)
     }
+
+    const handleKeyDown = e => {
+      const val = e.keyCode - 48
+      if (0 <= val && val <= palette.length) {
+        setSelectedVal(val !== 0 ? val-1 : 9)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return _ => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
   }, [palette, selectedVal])
 
   useEffect(() => {

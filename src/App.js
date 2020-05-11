@@ -15,7 +15,7 @@ function App() {
   const puzzleData = {
     rows: 10,
     cols: 12,
-    backgroundColor: '#dddddd'
+    backgroundColor: '#ffffff'
   }
 
   return (
