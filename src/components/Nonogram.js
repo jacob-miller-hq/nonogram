@@ -40,7 +40,6 @@ function Nonogram(props) {
   const [drawVal, setDrawVal] = useState(null)
 
   useEffect(() => {
-    console.log('resize effect')
     const handleResize = () => {
       setCanvasDims(canvasRef.current.getBoundingClientRect())
     }
@@ -247,7 +246,15 @@ function Nonogram(props) {
       
       const boundedEnd = bound(dragEnd, gridDims)
       
-      setDragIndexes(getIndexesBetween(dragStart, boundedEnd))
+      // TODO: consider preventing erase action from erasing other colors/non-x's/etc
+      const indexesBetween = getIndexesBetween(dragStart, boundedEnd)
+      if (drawVal > 0 && indexesBetween.length > 1) {
+        // prevent dragged color from drawing over x's
+        const filteredIndexesBetween = indexesBetween.filter(idx => grid[idx] !== -1)
+        setDragIndexes(filteredIndexesBetween)
+      } else {
+        setDragIndexes(indexesBetween)
+      }
     }
   }
 
