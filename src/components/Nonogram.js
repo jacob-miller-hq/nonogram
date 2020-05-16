@@ -22,17 +22,17 @@ function bound({x, y}, {left, top, right, bottom}) {
 
 function Nonogram(props) {
   const {puzzleData} = props
-  const {rows, cols, backgroundColor} = 
-      puzzleData ? puzzleData : {rows: 10, cols: 10, backgroundColor: '#000000'}
+  const {rows, cols, backgroundColor, rowClues, colClues} = 
+      puzzleData ? puzzleData : {rows: 1, cols: 1, backgroundColor: '#000000', rowClues: [[]], colClues: [[]]}
 
   const canvasRef = useRef(null)
 
   const [canvasDims, setCanvasDims] = useState({width: 0, height: 0})
-  const [palette, setPalette] = useState(['#00003f', '#ff0000', '#00ff7f'])
+  const [palette, setPalette] = useState(['#00003f'])
   const [selectedVal, setSelectedVal] = useState(0)
   const [showEditPalette, setShowEditPalette] = useState(false)
   const [grid, setGrid] = useState([])
-  const [gridDims, setGridDims] = useState({left:0, top:0, right:0, bottom:0, cellSize:0})
+  const [gridDims, setGridDims] = useState({left:0, top:0, right:0, bottom:0, cluesLeft:0, cluesTop:0, cellSize:0})
   const [paletteDims, setPaletteDims] = useState({left:0, top:0, right:0, bottom:0})
   const [pressed, setPressed] = useState(false)
   const [dragStart, setDragStart] = useState(null)
@@ -80,9 +80,14 @@ function Nonogram(props) {
   }, [palette, selectedVal])
 
   useEffect(() => {
-    // TODO: this probably needs some work
+    // TODO: this probably needs some work, very messy
     const margin = Math.min(canvasDims.width, canvasDims.height) * 0.05
-    const cellSize = Math.min((canvasDims.width - 1 - 2*margin) / cols, (canvasDims.height - 1 - 2*margin) / rows)
+    const maxLength = (max, clue) => clue.length > max ? clue.length : max
+    const maxColClues = colClues.reduce(maxLength, 0)
+    const maxRowClues = rowClues.reduce(maxLength, 0)
+    const cellSize = Math.min(
+        (canvasDims.width  - 1 - 2*margin) / (cols + maxRowClues),
+        (canvasDims.height - 1 - 2*margin) / (rows + maxColClues))
 
     const paletteLeft = margin
     const paletteTop = margin
@@ -100,20 +105,24 @@ function Nonogram(props) {
     const gridBottom = (canvasDims.height - 1) - margin
     const gridLeft = gridRight - (cellSize * cols)
     const gridTop = gridBottom - (cellSize * rows)
+    const cluesLeft = gridLeft - (cellSize * maxRowClues)
+    const cluesTop = gridTop - (cellSize * maxColClues) 
     setGridDims({
       left: gridLeft,
       top: gridTop,
       right: gridRight,
       bottom: gridBottom,
+      cluesLeft,
+      cluesTop,
       cellSize
     })
-  }, [canvasDims, cols, rows, palette])
+  }, [canvasDims, cols, rows, palette, rowClues, colClues])
 
   useEffect(() => {
     const cvs = canvasRef.current
     const ctx = cvs.getContext('2d')
     const {width, height} = canvasDims
-    const {left, top, right, bottom, cellSize} = gridDims
+    const {left, top, right, bottom, cluesLeft, cluesTop, cellSize} = gridDims
 
     // clear canvas
     ctx.fillStyle = backgroundColor
@@ -171,26 +180,61 @@ function Nonogram(props) {
       dragIndexes.forEach(i => fillCell(i, drawVal, true))
     }
 
+    // draw clue numbers
+    for(let i = 0; i < cols; i++) {
+      const x = left + i * cellSize + cellSize * 0.5
+      for(let j = 0; j < colClues[i].length; j++) {
+        const y = top - j * cellSize - cellSize * 0.5
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.font = `${0.5 * cellSize}px Arial`
+        ctx.fillStyle = '#000000'
+        ctx.fillText(colClues[i][j], x, y)
+      }
+    }
+
+    for(let i = 0; i < rows; i++) {
+      const y = top + i * cellSize + cellSize * 0.5
+      for(let j = 0; j < rowClues[i].length; j++) {
+        const x = left - j * cellSize - cellSize * 0.5
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.font = `${0.5 * cellSize}px Arial`
+        ctx.fillStyle = '#000000'
+        ctx.fillText(rowClues[i][j], x, y)
+      }
+    }
+
     // outline grid
     ctx.strokeStyle = '#111111'
     ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.moveTo(left, bottom)
+    ctx.moveTo(cluesLeft, bottom)
     ctx.lineTo(right, bottom)
-    ctx.lineTo(right, top)
+    ctx.lineTo(right, cluesTop)
+    // draw cols
     for(let i = 0; i < cols; i++) {
-      let x = left + i * cellSize
+      const x = left + i * cellSize
       ctx.moveTo(x, top)
       ctx.lineTo(x, bottom)
+      // clues
+      ctx.moveTo(x, top)
+      ctx.lineTo(x, cluesTop)
     }
+    // draw rows
     for(let i = 0; i < rows; i++) {
-      let y = top + i * cellSize
+      const y = top + i * cellSize
       ctx.moveTo(left, y)
       ctx.lineTo(right, y)
+      // clues
+      ctx.moveTo(left, y)
+      ctx.lineTo(cluesLeft, y)
     }
     ctx.stroke()
     // TODO: split this up so it doesn't have so many dependencies
-  }, [grid, rows, cols, backgroundColor, dragStart, dragIndexes, drawVal, pressed, palette, gridDims, paletteDims, canvasDims, selectedVal])
+  }, [grid, rows, cols, backgroundColor, dragStart, dragIndexes,
+    drawVal, pressed, palette, gridDims, paletteDims, canvasDims,
+    selectedVal, colClues, rowClues])
 
   const handleClick = e => {
     const pos = getCursorPos(canvasRef.current, e)
