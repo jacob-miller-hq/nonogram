@@ -16,8 +16,8 @@ function App() {
     rows: 5,
     cols: 5,
     backgroundColor: '#ffffff',
-    rowClues: [[1], [3], [], [1], [1]],
-    colClues: [[1], [1], [2, 2], [], []]
+    rowClues: [[{n:1, c:1}], [{n:3, c:1}], [], [{n:1, c:1}], [{n:1, c:1}]],
+    colClues: [[{n:1, c:1}], [{n:1, c:1}], [{n:2, c:1}, {n:2, c:1}], [], []]
   }
 
   return (

@@ -20,6 +20,15 @@ function bound({x, y}, {left, top, right, bottom}) {
   }
 }
 
+function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
 function Nonogram(props) {
   const {puzzleData} = props
   const {rows, cols, backgroundColor, rowClues, colClues} = 
@@ -180,28 +189,34 @@ function Nonogram(props) {
       dragIndexes.forEach(i => fillCell(i, drawVal, true))
     }
 
-    // draw clue numbers
+    // draw clues
+    const drawClue = (clue, x, y) => {
+      // draw color
+      const color = palette[clue.c - 1]
+      ctx.fillStyle = color
+      ctx.fillRect(x, y, cellSize, cellSize)
+      // draw number
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.font = `${0.5 * cellSize}px Arial`
+      const rgb = hexToRgb(color)
+      ctx.fillStyle = rgb.r*.3 + rgb.g*.5 + rgb.b*.2 > 110 ? '#000000' : '#ffffff'
+      ctx.fillText(clue.n, x + cellSize * 0.5, y + cellSize * 0.5)
+    }
+
     for(let i = 0; i < cols; i++) {
-      const x = left + i * cellSize + cellSize * 0.5
+      const x = left + i * cellSize
       for(let j = 0; j < colClues[i].length; j++) {
-        const y = top - j * cellSize - cellSize * 0.5
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.font = `${0.5 * cellSize}px Arial`
-        ctx.fillStyle = '#000000'
-        ctx.fillText(colClues[i][j], x, y)
+        const y = top - j * cellSize - cellSize
+        drawClue(colClues[i][j], x, y)
       }
     }
 
     for(let i = 0; i < rows; i++) {
-      const y = top + i * cellSize + cellSize * 0.5
+      const y = top + i * cellSize
       for(let j = 0; j < rowClues[i].length; j++) {
-        const x = left - j * cellSize - cellSize * 0.5
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.font = `${0.5 * cellSize}px Arial`
-        ctx.fillStyle = '#000000'
-        ctx.fillText(rowClues[i][j], x, y)
+        const x = left - j * cellSize - cellSize
+        drawClue(rowClues[i][j], x, y)
       }
     }
 

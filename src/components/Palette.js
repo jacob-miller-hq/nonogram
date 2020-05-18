@@ -2,6 +2,9 @@ import React, { useState } from 'react'
 import NumberInput from './NumberInput'
 import ColorPicker from './ColorPicker'
 
+// TODO: [BUG] changing the first color updates second?
+// reproduce: start with 2 default colors (different from DEFAULT_PALETTE), open editor and change first color.
+// second color should update to default to DEFAULT_PALETTE value
 const DEFAULT_PALETTE = [
   '#00003f',
   '#ff0000',
